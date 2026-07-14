@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StayWise.ai — Smart Hotel Booking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   StayWise.ai — Design tokens
+   ink:    #0F2436  near-navy, primary text / dark surfaces
+   brass:  #C9A227  warm gold accent — CTAs, price, "book now"
+   teal:   #1F6F6B  secondary accent — badges, admin nav
+   fog:    #EEF2F5  cool light background (not warm cream)
+   mist:   #FFFFFF  card surface
+   slate:  #5B6B76  secondary text
+   Type: display = Fraunces (hotel elegance, used for hotel names/headers)
+         body    = Inter (UI text)
+         mono    = IBM Plex Mono (prices, booking IDs, dates)
+   Signature: the "boarding-pass" ticket card — a perforated, torn-edge
+   summary card used at booking + confirmation, echoing a travel ticket
+   rather than a generic receipt.
+=================================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0F2436; --brass: #C9A227; --brass-dark:#A6821D; --teal: #1F6F6B;
+  --fog: #EEF2F5; --mist: #FFFFFF; --slate: #5B6B76; --line: #DCE3E8;
+  --danger: #C0524A; --good:#2E8B57;
+}
+html,body{ font-family:'Inter',sans-serif; background:var(--fog); color:var(--ink); }
+h1,h2,h3,.display{ font-family:'Fraunces',serif; }
+.mono{ font-family:'IBM Plex Mono',monospace; }
+a{ color:inherit; text-decoration:none; }
+button{ font-family:'Inter',sans-serif; cursor:pointer; border:none; }
+img{ display:block; max-width:100%; }
+.container{ max-width:1120px; margin:0 auto; padding:0 24px; }
+.hidden{ display:none !important; }
+
+/* ---------- Navbar ---------- */
+.navbar{ background:var(--ink); color:#fff; position:sticky; top:0; z-index:40; }
+.nav-inner{ max-width:1120px; margin:0 auto; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; }
+.brand{ display:flex; align-items:center; gap:9px; font-family:'Fraunces',serif; font-weight:600; font-size:20px; }
+.brand-mark{ width:30px; height:30px; border-radius:8px; background:var(--brass); display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--ink); font-weight:700; }
+.nav-links{ display:flex; gap:22px; font-size:13.5px; font-weight:500; }
+.nav-links a{ opacity:.82; padding:6px 0; }
+.nav-links a:hover{ opacity:1; }
+.nav-cta{ background:var(--brass); color:var(--ink); padding:9px 16px; border-radius:9px; font-weight:700; font-size:13px; }
+
+/* ---------- Buttons ---------- */
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 20px; border-radius:10px; font-weight:700; font-size:14px; transition:transform 120ms, background 120ms; }
+.btn:active{ transform:scale(.98); }
+.btn-brass{ background:var(--brass); color:var(--ink); }
+.btn-brass:hover{ background:var(--brass-dark); }
+.btn-ghost{ background:transparent; color:var(--ink); border:1.5px solid var(--line); }
+.btn-ghost:hover{ border-color:var(--ink); }
+.btn-teal{ background:var(--teal); color:#fff; }
+.btn-danger{ background:transparent; color:var(--danger); border:1.5px solid var(--danger); }
+.btn-block{ width:100%; }
+
+/* ---------- Hero / search ---------- */
+.hero{ background:linear-gradient(180deg,var(--ink) 0%, #163348 100%); color:#fff; padding:56px 0 90px; }
+.hero h1{ font-size:38px; font-weight:600; max-width:640px; line-height:1.15; }
+.hero p{ opacity:.75; margin-top:10px; font-size:15px; max-width:520px; }
+.search-card{ background:#fff; border-radius:18px; padding:20px; margin-top:-52px; box-shadow:0 30px 60px #0F243633; display:grid; grid-template-columns: 1.4fr 1fr 1fr 0.8fr auto; gap:14px; align-items:end; }
+.field label{ font-size:11.5px; font-weight:700; color:var(--slate); text-transform:uppercase; letter-spacing:.4px; display:block; margin-bottom:6px; }
+.field input, .field select{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--line); font-family:'Inter',sans-serif; font-size:13.5px; color:var(--ink); }
+@media (max-width:880px){ .search-card{ grid-template-columns:1fr 1fr; } }
+
+/* ---------- Sections ---------- */
+.section{ padding:52px 0; }
+.section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:22px; }
+.section-head h2{ font-size:24px; font-weight:600; }
+.eyebrow{ font-size:11.5px; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
+
+/* ---------- Hotel cards ---------- */
+.grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+@media (max-width:880px){ .grid{ grid-template-columns:1fr 1fr; } }
+@media (max-width:600px){ .grid{ grid-template-columns:1fr; } }
+.hotel-card{ background:#fff; border-radius:16px; overflow:hidden; border:1px solid var(--line); display:flex; flex-direction:column; transition:box-shadow 150ms; }
+.hotel-card:hover{ box-shadow:0 14px 32px #0F24361A; }
+.hotel-card img{ height:150px; width:100%; object-fit:cover; }
+.hotel-card .body{ padding:14px 15px 16px; display:flex; flex-direction:column; gap:6px; flex:1; }
+.hotel-card .name{ font-family:'Fraunces',serif; font-weight:600; font-size:16.5px; }
+.hotel-card .loc{ font-size:12px; color:var(--slate); }
+.badge{ display:inline-flex; align-items:center; gap:5px; background:var(--teal); color:#fff; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; width:fit-content; }
+.rating{ font-size:12px; color:var(--brass-dark); font-weight:700; }
+.price-row{ display:flex; align-items:baseline; justify-content:space-between; margin-top:auto; padding-top:8px; }
+.price{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:17px; }
+.price span{ font-family:'Inter',sans-serif; font-weight:400; font-size:11.5px; color:var(--slate); }
+
+/* ---------- Search results layout ---------- */
+.results-layout{ display:grid; grid-template-columns:230px 1fr; gap:26px; align-items:start; }
+@media (max-width:800px){ .results-layout{ grid-template-columns:1fr; } }
+.filters{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px; position:sticky; top:80px; }
+.filters h4{ font-size:13px; margin-bottom:10px; }
+.filter-group{ margin-bottom:16px; }
+.filter-group label{ display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:7px; color:var(--slate); }
+.results-list{ display:flex; flex-direction:column; gap:14px; }
+.result-row{ display:grid; grid-template-columns:170px 1fr auto; gap:16px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; align-items:center; }
+.result-row img{ height:100px; border-radius:10px; object-fit:cover; }
+@media (max-width:640px){ .result-row{ grid-template-columns:1fr; } .result-row img{ width:100%; height:130px; } }
+
+/* ---------- Hotel detail ---------- */
+.gallery{ display:grid; grid-template-columns:2fr 1fr; gap:10px; border-radius:16px; overflow:hidden; height:340px; }
+.gallery img{ height:100%; object-fit:cover; }
+.gallery .side{ display:grid; grid-template-rows:1fr 1fr; gap:10px; }
+@media (max-width:700px){ .gallery{ grid-template-columns:1fr; height:auto;} .gallery .side{ display:none; } }
+.detail-layout{ display:grid; grid-template-columns:1.6fr 1fr; gap:28px; margin-top:26px; align-items:start; }
+@media (max-width:800px){ .detail-layout{ grid-template-columns:1fr; } }
+.amenity-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+.amenity{ font-size:13px; color:var(--slate); display:flex; align-items:center; gap:8px; }
+.dot{ width:6px; height:6px; border-radius:50%; background:var(--teal); flex-shrink:0; }
+.book-panel{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px; position:sticky; top:80px; }
+
+/* ---------- Boarding-pass ticket (signature element) ---------- */
+.ticket{ background:#fff; border-radius:16px; position:relative; box-shadow:0 20px 50px #0F243622; overflow:visible; display:grid; grid-template-columns: 1fr 130px; }
+.ticket .perf{ position:absolute; top:0; bottom:0; left:calc(100% - 130px); width:0; border-left:2px dashed var(--line); }
+.ticket .main{ padding:22px 22px; }
+.ticket .stub{ background:var(--ink); color:#fff; padding:22px 16px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:6px; border-radius:0 16px 16px 0; }
+.ticket .stub .label{ font-size:10px; opacity:.65; text-transform:uppercase; letter-spacing:.5px; }
+.ticket .stub .val{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:15px; }
+.tkt-row{ display:flex; justify-content:space-between; padding:7px 0; border-top:1px dashed var(--line); font-size:13.5px; }
+.tkt-row:first-child{ border-top:none; }
+.tkt-row .k{ color:var(--slate); }
+.tkt-row .v{ font-family:'IBM Plex Mono',monospace; font-weight:600; }
+
+/* ---------- Forms ---------- */
+.form-card{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:24px; }
+.form-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+@media (max-width:600px){ .form-row{ grid-template-columns:1fr; } }
+.field-full label{ font-size:12px; font-weight:700; color:var(--slate); display:block; margin-bottom:6px; }
+.field-full input, .field-full select{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--line); font-size:13.5px; }
+
+/* ---------- Payment ---------- */
+.pay-methods{ display:flex; gap:10px; margin-bottom:16px; }
+.pay-chip{ flex:1; border:1.5px solid var(--line); border-radius:10px; padding:12px; text-align:center; font-weight:600; font-size:13px; cursor:pointer; }
+.pay-chip.active{ border-color:var(--brass); background:#FBF4E2; }
+
+/* ---------- Admin ---------- */
+.admin-shell{ display:grid; grid-template-columns:220px 1fr; min-height:520px; }
+.admin-sidebar{ background:var(--ink); color:#fff; padding:22px 14px; }
+.admin-sidebar .item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:9px; font-size:13.5px; font-weight:500; opacity:.78; margin-bottom:4px; }
+.admin-sidebar .item.active{ background:#ffffff14; opacity:1; }
+.admin-main{ padding:26px 30px; }
+.stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px; }
+@media (max-width:700px){ .stat-grid{ grid-template-columns:1fr; } }
+.stat-card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+.stat-card .lbl{ font-size:12px; color:var(--slate); font-weight:600; margin-bottom:8px; }
+.stat-card .num{ font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; }
+table{ width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--slate); padding:11px 14px; background:#F7F9FA; }
+td{ padding:11px 14px; font-size:13.5px; border-top:1px solid var(--line); }
+.status-pill{ font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; }
+.status-confirmed{ background:#E4F4EA; color:var(--good); }
+.status-pending{ background:#FDF2DC; color:var(--brass-dark); }
+.status-cancelled{ background:#FBEBE9; color:var(--danger); }
+.row-actions{ display:flex; gap:8px; }
+.icon-btn{ background:#F1F4F6; border-radius:7px; padding:6px 10px; font-size:12px; font-weight:600; }
+
+/* ---------- Toast ---------- */
+#toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(120%); background:var(--ink); color:#fff; padding:12px 20px; border-radius:10px; font-size:13.5px; z-index:100; transition:transform 250ms; }
+#toast.show{ transform:translateX(-50%) translateY(0); }
+
+.center-page{ min-height:70vh; display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+.small-note{ font-size:12px; color:var(--slate); margin-top:14px; text-align:center; }
+.recommend-strip{ display:flex; gap:16px; overflow-x:auto; padding-bottom:6px; }
+.rec-card{ min-width:210px; }
+footer{ text-align:center; padding:30px; font-size:12px; color:var(--slate); }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="#/" class="brand"><span class="brand-mark">SW</span>StayWise.ai</a>
+    <div class="nav-links">
+      <a href="#/">Home</a>
+      <a href="#/search">Search</a>
+      <a href="#/admin/login">Admin</a>
+    </div>
+    <a href="#/search" class="nav-cta">Find a stay</a>
+  </div>
+</nav>
+
+<div id="app"></div>
+<div id="toast"></div>
+
+<script>
+/* =========================== MOCK DATA =========================== */
+const HOTELS = [
+  { id:1, name:"Marina Bluff Residency", city:"Goa", rating:4.7, price:6200, type:"Deluxe", amenities:["Free WiFi","Pool","Breakfast","Sea View","Parking","AC"],
+    img:"https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=70",
+    gallery:["https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1000&q=70","https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=70","https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=70"],
+    desc:"A breezy beachfront residency with panoramic sea views, an infinity pool, and easy access to Goa's north-shore markets." },
+  { id:2, name:"The Ridgeview Manor", city:"Manali", rating:4.5, price:4800, type:"Suite", amenities:["Free WiFi","Fireplace","Breakfast","Mountain View","Parking","Heating"],
+    img:"https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=70",
+    gallery:["https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1000&q=70","https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=70","https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=600&q=70"],
+    desc:"A timber-clad mountain manor with private fireplaces and floor-to-ceiling views of the Pir Panjal range." },
+  { id:3, name:"Urban Nest Business Hotel", city:"Bengaluru", rating:4.2, price:3600, type:"Standard", amenities:["Free WiFi","Gym","Breakfast","Workspace","Parking","AC"],
+    img:"https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&q=70",
+    gallery:["https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=1000&q=70","https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=70","https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=70"],
+    desc:"A no-fuss business hotel near the tech corridor, built for short stays with fast WiFi and a 24-hour desk." },
+  { id:4, name:"Lakeside Heritage Villa", city:"Udaipur", rating:4.8, price:8900, type:"Villa", amenities:["Free WiFi","Pool","Breakfast","Lake View","Butler Service","AC"],
+    img:"https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=70",
+    gallery:["https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1000&q=70","https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=70","https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=70"],
+    desc:"A restored 19th-century haveli on the lake's edge, with private courtyards and a rooftop dining terrace." },
+  { id:5, name:"Palm Grove Backwater Resort", city:"Alleppey", rating:4.6, price:5400, type:"Deluxe", amenities:["Free WiFi","Pool","Breakfast","Backwater View","Ayurveda Spa","AC"],
+    img:"https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=70",
+    gallery:["https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1000&q=70","https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=70","https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=70"],
+    desc:"Stilted cottages over the backwaters with a private jetty, houseboat transfers, and an on-site Ayurveda spa." },
+  { id:6, name:"Old Quarter Boutique Inn", city:"Jaipur", rating:4.3, price:4100, type:"Suite", amenities:["Free WiFi","Breakfast","Rooftop Cafe","Heritage Decor","Parking","AC"],
+    img:"https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=70",
+    gallery:["https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1000&q=70","https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=70","https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=70"],
+    desc:"A pink-sandstone haveli tucked in Jaipur's old quarter, walking distance from Hawa Mahal." },
+];
+
+let BOOKINGS = [
+  { id:"SW-10234", hotel:"Marina Bluff Residency", guest:"Ananya Rao", checkin:"2026-07-20", checkout:"2026-07-23", amount:18600, status:"confirmed" },
+  { id:"SW-10235", hotel:"Old Quarter Boutique Inn", guest:"Rohan Mehta", checkin:"2026-07-18", checkout:"2026-07-19", amount:4100, status:"pending" },
+  { id:"SW-10236", hotel:"Lakeside Heritage Villa", guest:"Farah Sheikh", checkin:"2026-08-01", checkout:"2026-08-04", amount:26700, status:"confirmed" },
+  { id:"SW-10237", hotel:"Urban Nest Business Hotel", guest:"Karan Bose", checkin:"2026-07-15", checkout:"2026-07-16", amount:3600, status:"cancelled" },
+];
+
+let state = { searchCity:"", checkin:"", checkout:"", guests:2, currentHotelId:null, draftBooking:null, paymentMethod:"card", adminLoggedIn:false };
+
+/* =========================== HELPERS =========================== */
+function fmt(n){ return "₹" + n.toLocaleString("en-IN"); }
+function nights(a,b){ if(!a||!b) return 1; const d=(new Date(b)-new Date(a))/86400000; return d>0?d:1; }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
+function stars(r){ return "★".repeat(Math.round(r)) + "☆".repeat(5-Math.round(r)); }
+function go(hash){ window.location.hash = hash; }
+
+/* recommender: simple mock — top rated + a bit of shuffle based on "history" */
+function recommended(){ return [...HOTELS].sort((a,b)=>b.rating-a.rating).slice(0,3); }
+
+/* =========================== VIEWS =========================== */
+function hotelCard(h){
+  return `<div class="hotel-card">
+    <img src="${h.img}" alt="${h.name}">
+    <div class="body">
+      <span class="badge">${h.type}</span>
+      <div class="name">${h.name}</div>
+      <div class="loc">${h.city}</div>
+      <div class="rating">${stars(h.rating)} ${h.rating}</div>
+      <div class="price-row">
+        <div class="price">${fmt(h.price)}<span> / night</span></div>
+        <button class="btn btn-brass" onclick="go('#/hotel/${h.id}')">Book Now</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function viewLanding(){
+  return `
+  <section class="hero">
+    <div class="container">
+      <div class="eyebrow" style="color:#E8C766">AI-assisted booking</div>
+      <h1>Find your next stay,<br>without the endless scrolling.</h1>
+      <p>Search live availability across boutique stays and business hotels, then let SmartStay Recommender narrow it down for you.</p>
+    </div>
+  </section>
+  <div class="container">
+    <div class="search-card">
+      <div class="field"><label>Destination</label><input id="s-city" placeholder="Goa, Jaipur, Manali…"></div>
+      <div class="field"><label>Check-in</label><input id="s-in" type="date"></div>
+      <div class="field"><label>Check-out</label><input id="s-out" type="date"></div>
+      <div class="field"><label>Guests</label><select id="s-guests"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+      <button class="btn btn-brass" style="height:44px" onclick="doSearch()">Search</button>
+    </div>
+  </div>
+
+  <section class="section container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">SmartStay Recommender</div>
+        <h2>Picked for you</h2>
+      </div>
+    </div>
+    <div class="recommend-strip">
+      ${recommended().map(h=>`<div class="rec-card">${hotelCard(h)}</div>`).join("")}
+    </div>
+  </section>
+
+  <section class="section container">
+    <div class="section-head">
+      <div><div class="eyebrow">Trending this month</div><h2>Featured hotels</h2></div>
+    </div>
+    <div class="grid">${HOTELS.map(hotelCard).join("")}</div>
+  </section>
+  <footer>StayWise.ai — demo build. Payments, email, and AI recommendations are simulated.</footer>
+  `;
+}
+
+function doSearch(){
+  state.searchCity = document.getElementById('s-city').value;
+  state.checkin = document.getElementById('s-in').value;
+  state.checkout = document.getElementById('s-out').value;
+  state.guests = document.getElementById('s-guests').value;
+  go('#/search');
+}
+
+function viewSearch(){
+  const q = state.searchCity ? state.searchCity.toLowerCase() : "";
+  const list = HOTELS.filter(h => !q || h.city.toLowerCase().includes(q) || h.name.toLowerCase().includes(q));
+  return `
+  <div class="container section">
+    <div class="section-head"><h2>${list.length} stays ${state.searchCity? "in "+state.searchCity : "available"}</h2></div>
+    <div class="results-layout">
+      <aside class="filters">
+        <h4>Filters</h4>
+        <div class="filter-group">
+          <label style="font-weight:700;color:var(--ink)">Price range</label>
+          <label><input type="checkbox" checked> Under ₹5,000</label>
+          <label><input type="checkbox" checked> ₹5,000 – ₹8,000</label>
+          <label><input type="checkbox" checked> Above ₹8,000</label>
+        </div>
+        <div class="filter-group">
+          <label style="font-weight:700;color:var(--ink)">Room type</label>
+          <label><input type="checkbox" checked> Standard</label>
+          <label><input type="checkbox" checked> Deluxe</label>
+          <label><input type="checkbox" checked> Suite</label>
+          <label><input type="checkbox" checked> Villa</label>
+        </div>
+        <div class="filter-group">
+          <label style="font-weight:700;color:var(--ink)">Amenities</label>
+          <label><input type="checkbox" checked> Pool</label>
+          <label><input type="checkbox" checked> Breakfast included</label>
+          <label><input type="checkbox" checked> Free WiFi</label>
+        </div>
+      </aside>
+      <div class="results-list">
+        ${list.map(h=>`
+          <div class="result-row">
+            <img src="${h.img}">
+            <div>
+              <span class="badge">${h.type}</span>
+              <div class="name display" style="font-weight:600;font-size:16px;margin:4px 0 2px">${h.name}</div>
+              <div class="loc">${h.city} · ${stars(h.rating)} ${h.rating}</div>
+              <div style="font-size:12px;color:var(--slate);margin-top:4px">${h.amenities.slice(0,3).join(" · ")}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="price">${fmt(h.price)}<span> /night</span></div>
+              <button class="btn btn-brass" style="margin-top:8px" onclick="go('#/hotel/${h.id}')">Book Now</button>
+            </div>
+          </div>`).join("") || `<p style="color:var(--slate)">No hotels match that search — try another destination.</p>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function viewHotelDetail(id){
+  const h = HOTELS.find(x=>x.id===id);
+  if(!h) return `<div class="container section"><p>Hotel not found.</p></div>`;
+  return `
+  <div class="container section">
+    <div class="gallery">
+      <img src="${h.gallery[0]}">
+      <div class="side"><img src="${h.gallery[1]}"><img src="${h.gallery[2]}"></div>
+    </div>
+    <div class="detail-layout">
+      <div>
+        <span class="badge">${h.type}</span>
+        <h1 style="margin-top:8px;font-size:28px;font-weight:600">${h.name}</h1>
+        <div class="loc" style="margin-top:4px">${h.city} · ${stars(h.rating)} ${h.rating}</div>
+        <p style="margin-top:14px;color:var(--slate);font-size:14px;line-height:1.6">${h.desc}</p>
+        <h3 style="font-size:15px;margin-top:22px;margin-bottom:4px">Amenities</h3>
+        <div class="amenity-grid">${h.amenities.map(a=>`<div class="amenity"><span class="dot"></span>${a}</div>`).join("")}</div>
+      </div>
+      <div class="book-panel">
+        <div class="price" style="font-size:22px">${fmt(h.price)}<span> / night</span></div>
+        <div class="form-row" style="margin-top:14px">
+          <div class="field-full"><label>Check-in</label><input id="d-in" type="date" value="${state.checkin||''}"></div>
+          <div class="field-full"><label>Check-out</label><input id="d-out" type="date" value="${state.checkout||''}"></div>
+        </div>
+        <div class="field-full" style="margin-bottom:14px"><label>Guests</label><select id="d-guests"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+        <button class="btn btn-brass btn-block" onclick="startBooking(${h.id})">Book Room</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function startBooking(hotelId){
+  const inEl = document.getElementById('d-in'), outEl = document.getElementById('d-out'), gEl = document.getElementById('d-guests');
+  state.checkin = inEl.value || "2026-07-20";
+  state.checkout = outEl.value || "2026-07-22";
+  state.guests = gEl.value;
+  state.currentHotelId = hotelId;
+  go('#/booking/'+hotelId);
+}
+
+function viewBooking(hotelId){
+  const h = HOTELS.find(x=>x.id===hotelId);
+  if(!h) return `<div class="container section"><p>Hotel not found.</p></div>`;
+  const n = nights(state.checkin, state.checkout);
+  const subtotal = h.price*n, tax = Math.round(subtotal*0.12), total = subtotal+tax;
+  return `
+  <div class="container section" style="max-width:920px">
+    <h2 style="margin-bottom:18px">Complete your booking</h2>
+    <div class="detail-layout">
+      <div class="form-card">
+        <h3 style="font-size:15px;margin-bottom:14px">Guest details</h3>
+        <div class="form-row">
+          <div class="field-full"><label>Full name</label><input id="g-name" placeholder="Ananya Rao"></div>
+          <div class="field-full"><label>Email</label><input id="g-email" placeholder="ananya@email.com"></div>
+        </div>
+        <div class="form-row">
+          <div class="field-full"><label>Phone number</label><input id="g-phone" placeholder="+91 98765 43210"></div>
+          <div class="field-full"><label>Guests</label><input value="${state.guests}" disabled></div>
+        </div>
+        <div class="form-row">
+          <div class="field-full"><label>Check-in</label><input value="${state.checkin}" disabled></div>
+          <div class="field-full"><label>Check-out</label><input value="${state.checkout}" disabled></div>
+        </div>
+      </div>
+      <div class="ticket" style="grid-template-columns:1fr">
+        <div class="main">
+          <div class="eyebrow">Price breakdown</div>
+          <div class="tkt-row"><span class="k">${h.name}</span><span class="v"></span></div>
+          <div class="tkt-row"><span class="k">${fmt(h.price)} × ${n} night${n>1?'s':''}</span><span class="v">${fmt(subtotal)}</span></div>
+          <div class="tkt-row"><span class="k">Taxes & fees (12%)</span><span class="v">${fmt(tax)}</span></div>
+          <div class="tkt-row" style="font-weight:700;font-size:15px"><span class="k" style="color:var(--ink)">Total</span><span class="v">${fmt(total)}</span></div>
+          <button class="btn btn-brass btn-block" style="margin-top:16px" onclick="proceedToPayment(${h.id}, ${total})">Pay Now</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function proceedToPayment(hotelId, total){
+  const name = document.getElementById('g-name').value || "Guest User";
+  const email = document.getElementById('g-email').value || "guest@email.com";
+  if(!document.getElementById('g-name').value){ toast("Enter your name to continue"); }
+  state.draftBooking = { hotelId, name, email, total };
+  go('#/payment');
+}
+
+function viewPayment(){
+  const b = state.draftBooking;
+  if(!b) return `<div class="container section"><p>Nothing to pay — start a booking first.</p></div>`;
+  return `
+  <div class="center-page">
+    <div class="form-card" style="width:100%;max-width:420px">
+      <h3 style="margin-bottom:4px">Secure payment</h3>
+      <p style="font-size:12.5px;color:var(--slate);margin-bottom:16px">Simulated Stripe/Razorpay checkout — no real charge is made.</p>
+      <div class="pay-methods">
+        <div class="pay-chip ${state.paymentMethod==='card'?'active':''}" onclick="setPayMethod('card')">Card</div>
+        <div class="pay-chip ${state.paymentMethod==='upi'?'active':''}" onclick="setPayMethod('upi')">UPI</div>
+      </div>
+      <div id="pay-fields"></div>
+      <div class="tkt-row" style="margin:14px 0"><span class="k">Amount payable</span><span class="v" style="font-size:16px">${fmt(b.total)}</span></div>
+      <button class="btn btn-brass btn-block" onclick="finalizePayment()">Pay ${fmt(b.total)}</button>
+    </div>
+  </div>`;
+}
+
+function setPayMethod(m){ state.paymentMethod = m; render(); }
+
+function renderPayFields(){
+  const el = document.getElementById('pay-fields');
+  if(!el) return;
+  if(state.paymentMethod==='card'){
+    el.innerHTML = `
+      <div class="field-full" style="margin-bottom:10px"><label>Card number</label><input placeholder="4242 4242 4242 4242"></div>
+      <div class="form-row">
+        <div class="field-full"><label>Expiry</label><input placeholder="MM/YY"></div>
+        <div class="field-full"><label>CVV</label><input placeholder="•••"></div>
+      </div>`;
+  } else {
+    el.innerHTML = `<div class="field-full" style="margin-bottom:10px"><label>UPI ID</label><input placeholder="yourname@upi"></div>`;
+  }
+}
+
+function finalizePayment(){
+  const b = state.draftBooking;
+  const h = HOTELS.find(x=>x.id===b.hotelId);
+  const id = "SW-"+Math.floor(10000+Math.random()*89999);
+  const record = { id, hotel:h.name, guest:b.name, checkin:state.checkin, checkout:state.checkout, amount:b.total, status:"confirmed" };
+  BOOKINGS.unshift(record);
+  state.lastConfirmation = record;
+  go('#/booking/confirmation');
+}
+
+function viewConfirmation(){
+  const c = state.lastConfirmation;
+  if(!c) return `<div class="container section"><p>No recent booking found.</p></div>`;
+  return `
+  <div class="center-page">
+    <div style="width:100%;max-width:520px">
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="width:48px;height:48px;border-radius:50%;background:#E4F4EA;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:22px;color:var(--good)">✓</div>
+        <h2>Booking confirmed</h2>
+        <p style="color:var(--slate);font-size:13.5px;margin-top:4px">A confirmation email has been sent to your inbox.</p>
+      </div>
+      <div class="ticket">
+        <div class="main">
+          <div class="eyebrow">${c.hotel}</div>
+          <div class="tkt-row"><span class="k">Guest</span><span class="v">${c.guest}</span></div>
+          <div class="tkt-row"><span class="k">Check-in</span><span class="v">${c.checkin}</span></div>
+          <div class="tkt-row"><span class="k">Check-out</span><span class="v">${c.checkout}</span></div>
+          <div class="tkt-row"><span class="k">Amount paid</span><span class="v">${fmt(c.amount)}</span></div>
+        </div>
+        <div class="perf"></div>
+        <div class="stub">
+          <div class="label">Booking ID</div>
+          <div class="val">${c.id}</div>
+          <div class="label" style="margin-top:10px">Status</div>
+          <div class="val" style="color:#8FE0C4">CONFIRMED</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:18px">
+        <button class="btn btn-ghost" onclick="go('#/')">Back to home</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- Admin ---------- */
+function viewAdminLogin(){
+  return `
+  <div class="center-page">
+    <div class="form-card" style="width:100%;max-width:380px">
+      <h3 style="margin-bottom:4px">Admin sign-in</h3>
+      <p style="font-size:12.5px;color:var(--slate);margin-bottom:16px">Hotel manager access only.</p>
+      <div class="field-full" style="margin-bottom:12px"><label>Email</label><input value="manager@staywise.ai"></div>
+      <div class="field-full" style="margin-bottom:16px"><label>Password</label><input type="password" value="••••••••"></div>
+      <button class="btn btn-brass btn-block" onclick="adminLogin()">Sign in</button>
+    </div>
+  </div>`;
+}
+function adminLogin(){ state.adminLoggedIn = true; go('#/admin/dashboard'); }
+
+function adminShell(active, inner){
+  const items = [
+    {k:'dashboard', label:'Dashboard'}, {k:'rooms', label:'Manage Rooms'}, {k:'bookings', label:'Manage Bookings'},
+  ];
+  return `
+  <div class="admin-shell container" style="padding:26px 24px">
+    <div class="admin-sidebar" style="border-radius:14px 0 0 14px">
+      <div style="font-family:'Fraunces',serif;font-weight:600;font-size:16px;margin-bottom:18px">StayWise Admin</div>
+      ${items.map(i=>`<a href="#/admin/${i.k}" class="item ${active===i.k?'active':''}">${i.label}</a>`).join("")}
+      <div class="item" style="margin-top:20px;cursor:pointer" onclick="go('#/')">Log out</div>
+    </div>
+    <div class="admin-main" style="background:#fff;border-radius:0 14px 14px 0;border:1px solid var(--line);border-left:none">
+      ${inner}
+    </div>
+  </div>`;
+}
+
+function viewAdminDashboard(){
+  const revenue = BOOKINGS.filter(b=>b.status!=='cancelled').reduce((s,b)=>s+b.amount,0);
+  return adminShell('dashboard', `
+    <h2 style="margin-bottom:16px">Dashboard overview</h2>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="lbl">Total bookings</div><div class="num">${BOOKINGS.length}</div></div>
+      <div class="stat-card"><div class="lbl">Revenue</div><div class="num">${fmt(revenue)}</div></div>
+      <div class="stat-card"><div class="lbl">Rooms available</div><div class="num">${HOTELS.length*6}</div></div>
+    </div>
+    <h3 style="font-size:14px;margin-bottom:10px">Recent bookings</h3>
+    <table><thead><tr><th>ID</th><th>Guest</th><th>Hotel</th><th>Amount</th><th>Status</th></tr></thead>
+    <tbody>${BOOKINGS.slice(0,5).map(b=>`
+      <tr><td class="mono">${b.id}</td><td>${b.guest}</td><td>${b.hotel}</td><td class="mono">${fmt(b.amount)}</td>
+      <td><span class="status-pill status-${b.status}">${b.status}</span></td></tr>`).join("")}
+    </tbody></table>
+  `);
+}
+
+function viewAdminRooms(){
+  return adminShell('rooms', `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2>Manage rooms</h2>
+      <button class="btn btn-teal" onclick="toast('New room form would open here')">+ Add room</button>
+    </div>
+    <table><thead><tr><th>Hotel</th><th>City</th><th>Type</th><th>Price/night</th><th>Rating</th><th></th></tr></thead>
+    <tbody>${HOTELS.map(h=>`
+      <tr><td>${h.name}</td><td>${h.city}</td><td>${h.type}</td><td class="mono">${fmt(h.price)}</td><td>${h.rating}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" onclick="toast('Editing room listing')">Edit</button>
+        <button class="icon-btn" onclick="toast('Image upload dialog would open here')">Upload image</button>
+      </div></td></tr>`).join("")}
+    </tbody></table>
+  `);
+}
+
+function viewAdminBookings(){
+  return adminShell('bookings', `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2>Manage bookings</h2>
+    </div>
+    <table><thead><tr><th>ID</th><th>Guest</th><th>Hotel</th><th>Check-in</th><th>Check-out</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+    <tbody>${BOOKINGS.map(b=>`
+      <tr><td class="mono">${b.id}</td><td>${b.guest}</td><td>${b.hotel}</td><td>${b.checkin}</td><td>${b.checkout}</td>
+      <td class="mono">${fmt(b.amount)}</td><td><span class="status-pill status-${b.status}">${b.status}</span></td>
+      <td><div class="row-actions">
+        ${b.status!=='cancelled' ? `<button class="icon-btn" onclick="cancelBooking('${b.id}')">Cancel</button>` : ''}
+      </div></td></tr>`).join("")}
+    </tbody></table>
+  `);
+}
+function cancelBooking(id){
+  const b = BOOKINGS.find(x=>x.id===id);
+  if(b){ b.status='cancelled'; toast('Booking '+id+' cancelled'); render(); }
+}
+
+/* =========================== ROUTER =========================== */
+function render(){
+  const app = document.getElementById('app');
+  const hash = window.location.hash || '#/';
+  let html = '';
+  if(hash === '#/' || hash === '') html = viewLanding();
+  else if(hash === '#/search') html = viewSearch();
+  else if(hash.indexOf('#/hotel/') === 0) html = viewHotelDetail(parseInt(hash.split('/')[2]));
+  else if(hash.indexOf('#/booking/confirmation') === 0) html = viewConfirmation();
+  else if(hash.indexOf('#/booking/') === 0) html = viewBooking(parseInt(hash.split('/')[2]));
+  else if(hash === '#/payment') html = viewPayment();
+  else if(hash === '#/admin/login') html = viewAdminLogin();
+  else if(hash === '#/admin/dashboard') html = state.adminLoggedIn ? viewAdminDashboard() : viewAdminLogin();
+  else if(hash === '#/admin/rooms') html = state.adminLoggedIn ? viewAdminRooms() : viewAdminLogin();
+  else if(hash === '#/admin/bookings') html = state.adminLoggedIn ? viewAdminBookings() : viewAdminLogin();
+  else html = `<div class="container section"><p>Page not found.</p></div>`;
+  app.innerHTML = html;
+  window.scrollTo(0,0);
+  renderPayFields();
+}
+window.addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>
